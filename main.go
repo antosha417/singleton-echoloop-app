@@ -34,11 +34,13 @@ func main() {
 	flag.Parse()
 	err := cleanArgs(text, port)
 	panicOnError(err)
+	fullUrl := fmt.Sprintf("%s:%d", *url, *port)
 
 	AllTexts = NewTexts()
 	AllTexts.Texts = append(AllTexts.Texts, *text)
-	go echoLoop()
+	go func() { waitForHttpServerToStart(fullUrl); echoLoop() }()
 
+	http.HandleFunc("/ping", pong)
 	http.HandleFunc("/", getNewText)
 	log.Printf("attempt to start server at :%d\n", *port)
 	err = http.ListenAndServe(fmt.Sprintf(":%d", *port), nil)
@@ -46,7 +48,7 @@ func main() {
 	if err != nil {
 		log.Println(err.Error())
 		log.Printf("can't listen on %d port, the first instance must be listening", *port)
-		sendTextToFirstInstance(*text, fmt.Sprintf("%s:%d", *url, *port))
+		sendTextToFirstInstance(*text, fullUrl)
 		log.Printf("echo loop for <%s> finished!", *text)
 		return
 	}

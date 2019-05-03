@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 )
 
 type Data struct {
@@ -31,6 +32,38 @@ func cleanNewText(data *Data) error {
 	return nil
 }
 
+func waitForHttpServerToStart(url string) {
+	log.Println("waiting for http server to start")
+	for {
+		time.Sleep(time.Second)
+
+		log.Println("checking if started...")
+		resp, err := http.Get(url + "/ping")
+		if err != nil {
+			log.Println("failed:", err)
+			continue
+		}
+		if resp.StatusCode != http.StatusOK {
+			log.Println("not ok:", resp.StatusCode)
+			panicOnError(resp.Body.Close())
+			continue
+		}
+		body, err := ioutil.ReadAll(resp.Body)
+		if stringBody := string(body); stringBody != "pong" {
+			log.Printf("wrong ans:<%s>", stringBody)
+			panicOnError(resp.Body.Close())
+			continue
+		}
+		break
+	}
+	log.Println("server up and running!")
+}
+
+func pong(w http.ResponseWriter, r *http.Request) {
+	_, err := fmt.Fprint(w, "pong")
+	panicOnError(err)
+}
+
 func getNewText(w http.ResponseWriter, r *http.Request) {
 
 	decoder := json.NewDecoder(r.Body)
@@ -44,7 +77,7 @@ func getNewText(w http.ResponseWriter, r *http.Request) {
 	} else {
 		respMessage = err.Error()
 	}
-	_, err = fmt.Fprintln(w, respMessage)
+	_, err = fmt.Fprint(w, respMessage)
 	panicOnError(err)
 }
 

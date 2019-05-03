@@ -36,8 +36,7 @@ func (t *Texts) count() int {
 var AllTexts Texts
 
 func echoLoop() {
-
-	ticker := time.Tick(5 * time.Second)
+	ticker := time.Tick(time.Second)
 	i := 0
 	for range ticker {
 		AllTexts.Lock()
